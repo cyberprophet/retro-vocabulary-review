@@ -1,0 +1,30 @@
+name: Deploy Review App to Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify data-free, network-free artifact
+        run: |
+          test -z "$(find . -path './.git' -prune -o -type f -name '*.json' -print -quit)"
+          ! grep -R -E 'fetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource|https?://' --exclude=README.md --exclude-dir=.git --exclude-dir=.github .
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
